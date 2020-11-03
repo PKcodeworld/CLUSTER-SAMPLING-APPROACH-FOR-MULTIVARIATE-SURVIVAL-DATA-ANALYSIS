@@ -1,0 +1,49 @@
+i= 1
+C= 20         #number of clusters
+K=5       #number of observations within one cluster
+L<-function(t){
+  return(t^alpha)
+}
+
+mu<-function(j,k){
+  return(L(t[j,k])*exp(x[j,k]*beta))
+}
+
+
+t<-matrix(T_jk,nrow=20)
+x<-matrix(rep(0,C*K),nrow=20)   
+for(i in 1:20){
+  for(j in 1:5){
+    x[i,j]=X_j[i]}
+}
+
+delta<-matrix(workdata$indicator,nrow=20)
+mod.var<-function(x,t,delta){
+  I=0
+  for(j in 1:C){
+    for(k in 1:K){
+      I=I-mu(j,k)*x[j,k]*x[j,k]
+    }
+  }
+  
+  
+  z<-matrix(rep(0,C*K), nrow=C) 
+  
+  for(j in 1:C){
+    for(k in 1:K){
+      z[j,k]=x[j,k]*(delta[j,k]-mu(j,k))
+    }
+  }
+  
+  zj<-rep(0,C)
+  for(j in 1:C){zj[j]<-sum(z[j,])}
+  
+  zbar<-sum(zj)/C
+  sz=C*sum((zj-zbar)^2)/(C-1)
+  
+  return(I^(-2)*sz)
+}
+
+mod.var(x,t,delta)
+
+

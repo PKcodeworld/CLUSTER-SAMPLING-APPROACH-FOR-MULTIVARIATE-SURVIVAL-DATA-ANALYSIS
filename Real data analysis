@@ -1,0 +1,36 @@
+#install.packages("gee")
+#install.packages("geepack")
+library("survival")
+  
+library("gee")
+library("geepack")
+data("cgd")
+workdata = cgd
+workdata = data.frame(workdata, X = 1*(workdata$treat=="rIFN-g"))
+#In the dataset tstop represents the observed data in survival model
+
+#New approach
+glm.fit = glm(status ~ offset(log(workdata$tstop)) + X, data = workdata, family = poisson)
+print(summary(glm.fit))
+beta.new = glm.fit$coefficients[2]
+se.glm = summary(glm.fit)$coefficients[2,2]
+abs(beta.new)/se.glm
+
+#GEE
+gee.fit = gee(status ~ offset(log(workdata$tstop)) + factor(treat), id = id, data = workdata, family = poisson)
+print(summary(gee.fit))
+beta.gee = gee.fit$coefficients[2]
+se.gee = sqrt(gee.fit$robust.variance[2,2])
+se.gee
+abs(beta.gee)/se.gee
+
+#Cox.ph model
+cox.ph = coxph(Surv(tstart, tstop, status) ~ treat,
+                data= workdata)
+print(summary(cox.ph))
+beta.cox = cox.ph$coefficients
+cox.se = sqrt(cox.ph$var)
+abs(beta.cox)/cox.se
+
+
+  

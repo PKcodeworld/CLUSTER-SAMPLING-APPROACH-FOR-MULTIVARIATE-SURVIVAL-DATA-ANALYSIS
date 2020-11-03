@@ -1,0 +1,85 @@
+rm(list=ls())
+#Number of clusters
+C = 40
+#cluster size
+k = 100
+#shape parameter of Weibull
+a = 2
+#covariate coefficient
+beta = 0
+#index of positive stable distribution
+alpha = 0.3
+#Data generation
+#install.packages("stabledist")
+library("stabledist")
+library("reshape2")
+library("caTools")
+library("gee")
+#generate the sample of delta
+#To make sure the values of the generated samples >0
+delta_j = NULL
+ind = 1
+while(ind<=C)
+{
+  d = -1
+  while(d<0)
+  {
+    d = rstable(1, alpha = alpha, beta = 0)
+  }
+  delta_j = c(delta_j, d)
+  ind = ind+1
+}
+
+delta_j
+#generate the sample of covariate x
+X_j = rbinom(C, size = 1, prob = 0.5)
+#Generate sample T_ijk
+Y_jk = matrix(nrow = C, ncol = k)
+T_jk = NULL
+for(i in 1:C)
+{
+  Y_jk[i,] = rweibull(k, scale = exp(beta*X_j[i]), shape = a)
+  T_jk = c(T_jk, Y_jk[i,]*delta_j[i]^(-1/a))
+}
+
+#Create a dataframe for our prepared dataset
+workdata = data.frame(id = rep(1:C, each = k), T_jk = T_jk, X_j = rep(X_j, each = k))
+
+#Add censored indicator in the dataframe for our prepared dataset
+## split = sample.split(workdata$id, SplitRatio = 0.9)
+workdata = data.frame(workdata, indicator = 1*(T_jk<=quantile(T_jk,0.9)))
+
+#New method
+diff1 = Inf
+diff2 = Inf
+beta0 = 1
+a0 = 1
+
+beta = beta0
+a = a0
+BETA = NULL
+A = NULL
+
+i=1
+while((diff1>0.0001)&&(diff2>0.0001))
+{
+  beta1 = geeglm(indicator ~ offset((alpha*a)*log(T_jk)) + X_j, id=id , family = poisson, data = workdata)$coefficients[2]
+  mu = (workdata$T_jk^(alpha*a))*exp(workdata$X_j*beta1)
+  a1 = sum(workdata$indicator)/sum(log(workdata$T_jk)*(mu-workdata$indicator))
+  diff1 = sqrt((beta1-beta)^2)
+  diff2 = sqrt((a1-a)^2)
+  beta = beta1
+  a = a1
+  BETA = c(BETA, beta1)
+  A = c(A, a1)
+  i=i+1
+}
+
+u<-function(beta,v){
+  
+}
+A
+BETA
+
+plot(A)
+plot(BETA)
